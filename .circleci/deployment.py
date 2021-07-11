@@ -463,7 +463,7 @@ class DiemReferenceMerchant(Deployment):
 
     def _destroy(self):
         pass
-        # TODO: destroy
+        # TODO: destroy service
 
 
 deployment_class = DiemReferenceMerchant
