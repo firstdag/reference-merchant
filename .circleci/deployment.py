@@ -195,14 +195,14 @@ class DiemReferenceMerchant(Deployment):
     def get_diem_vasp_hostname(self):
         return self.get_ref_merchant_public_domain_name()
 
+    def get_base_url(self):
+        f'https://{self.get_diem_vasp_hostname()}/'
+
     def get_diem_vasp_url(self):
-        return f'https://{self.get_diem_vasp_hostname()}/vasp'
+        return f'{self.get_base_url()}vasp'
 
     def get_diem_vasp_route(self) -> Route:
         return Route(host=self.get_diem_vasp_hostname(), path='/vasp')
-
-    def get_full_ref_merchant_public_domain_name(self):
-        return f'https://{self.get_ref_merchant_public_domain_name()'
 
     def get_ref_wallet_public_domain_name(self):
         if self.env_base == "production":
@@ -254,7 +254,7 @@ class DiemReferenceMerchant(Deployment):
             'CHAIN_ID': CHAIN_ID,
             'GAS_CURRENCY_CODE': CURRENCY,
             'WALLET_URL': self.get_ref_wallet_public_domain_name(),
-            'BASE_MERCHANT_URL': self.get_full_ref_merchant_public_domain_name()
+            'BASE_MERCHANT_URL': self.get_base_url()
         }
         if env_vars is not None:
             environment_variables.update(env_vars)
