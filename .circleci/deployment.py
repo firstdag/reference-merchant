@@ -196,10 +196,16 @@ class DiemReferenceMerchant(Deployment):
         return self.get_ref_merchant_public_domain_name()
 
     def get_base_url(self):
-        f'https://{self.get_diem_vasp_hostname()}/'
+        return f'https://{self.get_diem_vasp_hostname()}/'
 
     def get_diem_vasp_url(self):
         return f'{self.get_base_url()}vasp'
+
+    def get_ref_wallet_public_domain_name(self):
+        if self.env_base == "production":
+            return 'https://demo-wallet.diem.com/'
+        else:
+            return 'https://staging-diem-reference-wallet.dev.demo.firstdag.com/'
 
     def get_diem_vasp_route(self) -> Route:
         return Route(host=self.get_diem_vasp_hostname(), path='/vasp')
