@@ -33,7 +33,6 @@ CHAIN_ID = testnet.CHAIN_ID.to_int()
 JSON_RPC_URL = testnet.JSON_RPC_URL
 CURRENCY = 'XUS'
 
-
 def get_account_from_private_key(private_key) -> LocalAccount:
     return LocalAccount(Ed25519PrivateKey.from_private_bytes(bytes.fromhex(private_key)))
 
@@ -210,6 +209,12 @@ class DiemReferenceMerchant(Deployment):
 
     def get_diem_vasp_route(self) -> Route:
         return Route(host=self.get_diem_vasp_hostname(), path='/vasp')
+
+    def get_ref_wallet_public_domain_name(self):
+        if self.env_base == "production":
+            return 'https://demo-wallet.diem.com/'
+        else:
+            return 'https://staging-diem-reference-wallet.dev.demo.firstdag.com/'
 
     def deploy_secrets(self, secrets: WalletSecrets):
         kub_secrets = KubSecret(
