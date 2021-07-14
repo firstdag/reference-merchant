@@ -196,7 +196,7 @@ class DiemReferenceMerchant(Deployment):
         return self.get_ref_merchant_public_domain_name()
 
     def get_base_url(self):
-        f'https://{self.get_diem_vasp_hostname()}/'
+        return f'https://{self.get_diem_vasp_hostname()}/'
 
     def get_diem_vasp_url(self):
         return f'{self.get_base_url()}vasp'
