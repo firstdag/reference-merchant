@@ -20,7 +20,7 @@ from diem_utils.types.liquidity.trade import TradeId, Direction, TradeData
 
 class LpClient:
     def __init__(self, base_url=None):
-        self._base_url = f"http://{os.getenv('LIQUIDITY_SERVICE_HOST', 'liquidity')}:{os.getenv('LIQUIDITY_SERVICE_PORT', 5000)}"
+        self._base_url = f"http://{os.getenv('LIQUIDITY_SERVICE_HOST', 'liquidity')}:{os.getenv('LIQUIDITY_SERVICE_PORT', 7000)}"
 
         if base_url:
             self._base_url = base_url

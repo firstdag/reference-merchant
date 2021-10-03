@@ -7,7 +7,7 @@ import requests
 
 from .types import PaymentStatus, Payment, PaymentEventsLog, PaymentEvent
 
-PAYMENT_VASP_URL = os.getenv("PAYMENT_VASP_URL", "http://127.0.0.1:5000")
+PAYMENT_VASP_URL = os.getenv("PAYMENT_VASP_URL", "http://127.0.0.1:7000")
 VASP_TOKEN = os.getenv("VASP_TOKEN")
 
 

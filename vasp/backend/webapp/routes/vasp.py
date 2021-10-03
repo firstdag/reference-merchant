@@ -220,7 +220,7 @@ class VaspRoutes:
 
         def _generate_payment_url(self, new_payment):
             external_root = (
-                os.getenv("MY_EXTERNAL_URL", "http://127.0.0.1:5000").strip("/") + "/"
+                os.getenv("MY_EXTERNAL_URL", "http://127.0.0.1:7000").strip("/") + "/"
             )
             payment_form_url = (
                 external_root + "pay/index.html?payment=" + new_payment.id

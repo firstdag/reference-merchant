@@ -9,4 +9,4 @@ if [ "$FLASK_ENV" != "production"  ]; then
 fi
 
 bash
-${PIPENV} flask run --host 0.0.0.0 --port ${MERCHANT_BACKEND_PORT:-5000}
+${PIPENV} flask run --host 0.0.0.0 --port ${MERCHANT_BACKEND_PORT:-7000}

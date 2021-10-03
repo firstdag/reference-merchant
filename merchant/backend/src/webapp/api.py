@@ -3,6 +3,8 @@ from uuid import UUID
 
 from flask import Blueprint, request
 from requests import HTTPError
+import requests
+import json
 
 import store.products
 from store.orders import OrderItem, get_order_details
@@ -24,8 +26,10 @@ from .strict_schema_view import (
     path_str_param,
     path_uuid_param,
 )
+import logging
 
 api = Blueprint("api", __name__)
+logger = logging.getLogger(__name__)
 
 
 def order_item_to_product_order(item: OrderItem) -> ProductOrder:
@@ -74,10 +78,55 @@ class CheckoutView(ApiView):
             for item in purchase_request.items
         ]
         order = store.orders.create_order(items)
-        payment = vasp_client.start_payment(
-            order.total_price, order.currency, order.order_id
-        )
-        store.orders.set_order_payment_reference(order.order_id, payment.payment_id)
+        # payment = vasp_client.start_payment(
+        #     order.total_price, order.currency, order.order_id
+        # )
+        # jsonpayment = {
+        #     'body':{
+        #         'scope': {
+        #                 'requestCurrency': { 'amount': order.total_price, 'fractionDigits': 1, 'currency': order.currency },
+        #                 'expirationSeconds': 3600,
+        #             },
+        #         'redirectUrl': 'http://example.com',
+        #         'action': "AUTHORIZATION",
+        #         'reconciliationId': 'an open field to store any payment related data - for the merchant use',
+        #         'updateCallback': 'http://example.com',
+        #             },
+        #     'authorization': {
+        #                     'jwt': 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjN2YxMzM3OS04OGVjLTQ3ZjQtODNkZS0wMGE3NTg3NjI2NDMiLCJyb2xlIjoiU2VydmljZSIsIm1ldGFkYXRhIjp7Im1lcmNoYW50TmFtZSI6IlRlc3QgTWVyY2hhbnQgLSAyMDIxLTA5LTMwVDExOjM5OjQwLjc2MloifSwiaWF0IjoxNjMzMDgxOTA2LCJleHAiOjE2MzMwODU1MDZ9.MEYCIQDORfGvyd7wEEcwv34oTsLufwncYknn7xkz6CO5dvnxYAIhAJ5Qzy92uVVPMKOqkoNBMfMQydehMNmOutpZzpJPvZYY","identity":"c7f13379-88ec-47f4-83de-00a758762643', 
+        #                     'jwtPayload': {
+        #                         'userId': 'user',
+        #                         'role': 'Merchant',
+        #                         'metadata': {},
+        #                                 }
+        #     }
+        # },
+
+        request_body = {
+            "scope": {
+                "requestCurrency": {
+                    "amount": order.total_price, 
+                    "currency": order.currency,
+                    "fractionDigits": 1,
+                    }
+            },
+            "action": "AUTHORIZATION",
+            },
+
+
+        jsonkey = {
+            'apiKey': 'eZ4Uk0CaOURJiEwsPlFW1hb_eItce8o2ocDz_4__lZ8'
+        }
+
+        r = requests.post(url='http://host.docker.internal:3000/api/auth/login', json=jsonkey)
+        rpayment = requests.post('http://host.docker.internal:3000/api/payments', data=request_body)
+        logger.info('here11')
+        logger.info(r.text)
+
+        logger.info('here12')
+        logger.info(rpayment)
+        logger.info(rpayment.text)
+
 
         return (
             {
