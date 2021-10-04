@@ -1,5 +1,8 @@
 from dataclasses import asdict
+from datetime import datetime
+import os
 from uuid import UUID
+import uuid
 
 from flask import Blueprint, request
 from requests import HTTPError
@@ -7,7 +10,7 @@ import requests
 import json
 
 import store.products
-from store.orders import OrderItem, get_order_details
+from store.orders import Order, OrderItem, get_order_details
 from vasp_client import vasp_client
 from vasp_client.types import PaymentStatus
 
@@ -78,62 +81,65 @@ class CheckoutView(ApiView):
             for item in purchase_request.items
         ]
         order = store.orders.create_order(items)
-        # payment = vasp_client.start_payment(
-        #     order.total_price, order.currency, order.order_id
-        # )
-        # jsonpayment = {
-        #     'body':{
-        #         'scope': {
-        #                 'requestCurrency': { 'amount': order.total_price, 'fractionDigits': 1, 'currency': order.currency },
-        #                 'expirationSeconds': 3600,
-        #             },
-        #         'redirectUrl': 'http://example.com',
-        #         'action': "AUTHORIZATION",
-        #         'reconciliationId': 'an open field to store any payment related data - for the merchant use',
-        #         'updateCallback': 'http://example.com',
-        #             },
-        #     'authorization': {
-        #                     'jwt': 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjN2YxMzM3OS04OGVjLTQ3ZjQtODNkZS0wMGE3NTg3NjI2NDMiLCJyb2xlIjoiU2VydmljZSIsIm1ldGFkYXRhIjp7Im1lcmNoYW50TmFtZSI6IlRlc3QgTWVyY2hhbnQgLSAyMDIxLTA5LTMwVDExOjM5OjQwLjc2MloifSwiaWF0IjoxNjMzMDgxOTA2LCJleHAiOjE2MzMwODU1MDZ9.MEYCIQDORfGvyd7wEEcwv34oTsLufwncYknn7xkz6CO5dvnxYAIhAJ5Qzy92uVVPMKOqkoNBMfMQydehMNmOutpZzpJPvZYY","identity":"c7f13379-88ec-47f4-83de-00a758762643', 
-        #                     'jwtPayload': {
-        #                         'userId': 'user',
-        #                         'role': 'Merchant',
-        #                         'metadata': {},
-        #                                 }
-        #     }
-        # },
+        order_id = str(order.order_id)
 
+        PAYMENT_VASP_URL = os.getenv("PAYMENT_VASP_URL", "http://127.0.0.1:7000")
+        VASP_TOKEN = os.getenv("VASP_TOKEN")
+        MERCHANT_URL = os.getenv("MERCHANT_URL", "http://localhost:8000/")
+
+        logger.info(f"PAYMENT_VASP_URL={PAYMENT_VASP_URL}")
+        logger.info(f"VASP_TOKEN={VASP_TOKEN}")
+        logger.info(f"MERCHANT_URL={MERCHANT_URL}")
+
+        redirect_url = f"{MERCHANT_URL}order/{order_id}"
         request_body = {
+            "redirectUrl": redirect_url,
             "scope": {
                 "requestCurrency": {
-                    "amount": order.total_price, 
+                    "amount": order.total_price,
+                    "fractionDigits": 6,
                     "currency": order.currency,
-                    "fractionDigits": 1,
-                    }
+                },
+                "processingCurrency": "XUS",
+                "expirationTimestamp": int(datetime.now().timestamp()) + 60 * 10,
             },
-            "action": "AUTHORIZATION",
-            },
-
-
-        jsonkey = {
-            'apiKey': 'eZ4Uk0CaOURJiEwsPlFW1hb_eItce8o2ocDz_4__lZ8'
+            "action": "CHARGE",
+            "reconciliationId": order_id,
         }
 
-        r = requests.post(url='http://host.docker.internal:3000/api/auth/login', json=jsonkey)
-        rpayment = requests.post('http://host.docker.internal:3000/api/payments', data=request_body)
-        logger.info('here11')
-        logger.info(r.text)
+        jsonkey = {"apiKey": VASP_TOKEN}
 
-        logger.info('here12')
-        logger.info(rpayment)
-        logger.info(rpayment.text)
+        r = requests.post(url=f"{PAYMENT_VASP_URL}/auth/login", json=jsonkey)
+        response = r.json()
 
+        logger.info(response)
+        auth_token = response["authToken"]
+        headers = {"Authorization": f"Bearer {auth_token}"}
+
+        rpayment = requests.post(
+            f"{PAYMENT_VASP_URL}/payments", json=request_body, headers=headers
+        )
+        payment = rpayment.json()
+        logger.info(payment)
+
+        payment_id = payment["payment"]["paymentId"]
+        order.vasp_payment_reference = payment_id
+        open(f"/tmp/{order_id}", "w").write(order.to_json())
+
+        checkout_data = payment["payment"]["data"]
+        for wl in checkout_data["walletLinks"]:
+            wl["link"] += f"&demo=false&redirectUrl={redirect_url}"
+
+        result = {
+            "order_id": order_id,
+            "qr": checkout_data["qr"],
+            "deepLink": checkout_data["deepLink"],
+            "walletLinks": checkout_data["walletLinks"],
+        }
+        logger.info(result)
 
         return (
-            {
-                "order_id": order.order_id,
-                "vasp_payment_id": payment.payment_id,
-                "payment_form_url": payment.payment_form_url,
-            },
+            result,
             200,
         )
 
@@ -154,7 +160,29 @@ class OrderDetailsView(ApiView):
         if order is None:
             return "Unknown order", 404
 
-        payment_status = vasp_client.get_payment_log(order.vasp_payment_reference)
+        db_content = open(f"/tmp/{order_id}", "r").read()
+        logger.info("db content")
+        logger.info(db_content)
+        order = Order.from_json(db_content)
+        vasp_payment_id = order.vasp_payment_reference
+
+        PAYMENT_VASP_URL = os.getenv("PAYMENT_VASP_URL", "http://127.0.0.1:7000")
+        VASP_TOKEN = os.getenv("VASP_TOKEN")
+
+        jsonkey = {"apiKey": VASP_TOKEN}
+
+        r = requests.post(url=f"{PAYMENT_VASP_URL}/auth/login", json=jsonkey)
+        response = r.json()
+
+        logger.info(response)
+        auth_token = response["authToken"]
+        headers = {"Authorization": f"Bearer {auth_token}"}
+
+        rpayment = requests.get(
+            f"{PAYMENT_VASP_URL}/payments/{vasp_payment_id}", headers=headers
+        )
+        payment = rpayment.json()
+        logger.info(payment)
 
         order_details = OrderDetails(
             order_id=str(order.order_id),
@@ -163,7 +191,14 @@ class OrderDetailsView(ApiView):
             total_price=order.total_price,
             currency=order.currency,
             products=[order_item_to_product_order(item) for item in order.items],
-            payment_status=payment_status,
+            payment_status={
+                "status": payment["payment"]["state"],
+                "merchant_address": "",
+                "can_payout": True,
+                "can_refund": True,
+                "events": [],
+                "chain_txs": [],
+            },
         )
 
         return order_details.to_dict(), 200

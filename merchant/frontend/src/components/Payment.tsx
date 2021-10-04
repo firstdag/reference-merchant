@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Button, Modal, ModalBody, ModalHeader, Spinner } from "reactstrap";
+import React, { useEffect, useState } from "react";
+import { Modal, ModalBody, ModalHeader, Spinner } from "reactstrap";
 import BackendClient, { PaymentProcessingDetails } from "../services/merchant";
 import { Product } from "../interfaces/product";
-import OrderDetails from "./OrderDetails";
+import Checkout from "./Checkout";
 
 export interface PaymentProps {
   product?: Product;
@@ -11,13 +11,21 @@ export interface PaymentProps {
   onClose: () => void;
 }
 
-export default function Payment({ product, isOpen, demoMode, onClose }: PaymentProps) {
+export default function Payment({
+  product,
+  isOpen,
+  demoMode,
+  onClose,
+}: PaymentProps) {
   const [paymentProcessingDetails, setPaymentProcessingDetails] = useState<
     PaymentProcessingDetails | undefined
   >();
-  type PaymentState = "inactive" | "fetchingProcessingDetails" | "paying" | "paymentCleared";
+  type PaymentState =
+    | "inactive"
+    | "fetchingProcessingDetails"
+    | "paying"
+    | "paymentCleared";
   const [paymentState, setPaymentState] = useState<PaymentState>("inactive");
-  const [showOrderDetails, setShowOrderDetails] = useState<boolean>(false);
 
   if (paymentState === "inactive" && isOpen && !!product) {
     setPaymentState("fetchingProcessingDetails");
@@ -27,7 +35,7 @@ export default function Payment({ product, isOpen, demoMode, onClose }: PaymentP
   useEffect(() => {
     let isOutdated = false;
 
-    const fetchPaymentUrl = async () => {
+    const fetchPaymentDetails = async () => {
       try {
         if (paymentState !== "fetchingProcessingDetails") return;
 
@@ -43,14 +51,12 @@ export default function Payment({ product, isOpen, demoMode, onClose }: PaymentP
     };
 
     // noinspection JSIgnoredPromiseFromCall
-    fetchPaymentUrl();
+    fetchPaymentDetails();
 
     return () => {
       isOutdated = true;
     };
   }, [paymentState, product]);
-
-  const timeoutRef = useRef<NodeJS.Timeout>();
 
   const onModalClosed = () => {
     setPaymentState("inactive");
@@ -58,7 +64,13 @@ export default function Payment({ product, isOpen, demoMode, onClose }: PaymentP
   };
 
   return (
-    <Modal isOpen={isOpen} centered={true} size="md" toggle={onModalClosed} fade={true}>
+    <Modal
+      isOpen={isOpen}
+      centered={true}
+      size="md"
+      toggle={onModalClosed}
+      fade={true}
+    >
       <ModalHeader toggle={onModalClosed}>{product?.name}</ModalHeader>
       <ModalBody className="p-0">
         {paymentState === "fetchingProcessingDetails" && (
@@ -68,16 +80,15 @@ export default function Payment({ product, isOpen, demoMode, onClose }: PaymentP
         )}
 
         {paymentState === "paying" && (
-          <iframe
-            title="Checkout form"
-            height="560"
-            src={
-              demoMode
-                ? `${paymentProcessingDetails?.paymentFormUrl}&demoMode=True`
-                : paymentProcessingDetails?.paymentFormUrl
-            }
-            frameBorder="0"
-            allowFullScreen
+          <Checkout
+            paymentId={paymentProcessingDetails!.orderId}
+            orderId={paymentProcessingDetails!.orderId}
+            demoMode={false}
+            qr={paymentProcessingDetails!.qr}
+            deepLink={paymentProcessingDetails!.deepLink}
+            walletLinks={paymentProcessingDetails!.walletLinks}
+            fiatPrice={product!.price}
+            fiatCurrency={product!.currency}
           />
         )}
 
@@ -87,21 +98,6 @@ export default function Payment({ product, isOpen, demoMode, onClose }: PaymentP
           </h4>
         )}
       </ModalBody>
-    </Modal>
-  );
-}
-
-interface OrderDetailsModalProps {
-  orderId?: string;
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-function OrderDetailsModal({ orderId, isOpen, onClose }: OrderDetailsModalProps) {
-  return (
-    <Modal isOpen={isOpen} centered={true} size="md" toggle={onClose} fade={true}>
-      <ModalHeader toggle={onClose} />
-      <ModalBody className="p-0">{orderId && <OrderDetails orderId={orderId} />}</ModalBody>
     </Modal>
   );
 }

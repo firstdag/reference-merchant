@@ -22,7 +22,6 @@ function Home(props) {
   const { t } = useTranslation("layout");
   const [selectedProduct, setSelectedProduct] = useState<Product>();
   const [products, setProducts] = useState<Product[] | undefined>();
-  const [demoMode, setDemoMode] = useState<boolean>(props.demoMode === undefined ? false : true);
 
   const getProducts = async () => {
     try {
@@ -51,14 +50,17 @@ function Home(props) {
                   <Card key={product.gtin} className="mb-4">
                     <CardImg top src={product.image_url} />
                     <CardBody>
-                      <CardTitle className="font-weight-bold h5">{product.name}</CardTitle>
+                      <CardTitle className="font-weight-bold h5">
+                        {product.name}
+                      </CardTitle>
                       <CardText>{product.description}</CardText>
                     </CardBody>
                     <CardFooter>
                       <Row>
                         <Col>
                           <div>
-                            <strong>Price:</strong> {product.price / 1000000} {product.currency}
+                            <strong>Price:</strong> {product.price / 1000000}{" "}
+                            {product.currency}
                           </div>
                         </Col>
                         <Col lg={4} className="text-right">
@@ -82,7 +84,7 @@ function Home(props) {
         </section>
       </Container>
       <Payment
-        demoMode={demoMode}
+        demoMode={false}
         product={selectedProduct}
         isOpen={!!selectedProduct}
         onClose={() => setSelectedProduct(undefined)}

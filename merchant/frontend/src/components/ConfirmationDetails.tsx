@@ -35,15 +35,6 @@ function ConfirmationDetails({ orderId }: OrderDetailsProps) {
     };
   }, [orderId]);
 
-  const cashOut = async () => {
-    const client = new BackendClient();
-    await client.payout(order!.vaspPaymentRef);
-    const fetched = await new BackendClient().getOrderDetails(orderId);
-    if (fetched) {
-      setOrder(fetched);
-    }
-  };
-
   // Show spinner if order is undefined - it is being loaded
   let orderInfo = (
     <div className="d-flex justify-content-center">
@@ -63,8 +54,18 @@ function ConfirmationDetails({ orderId }: OrderDetailsProps) {
       orderInfo = (
         <>
           <div style={{ display: "flex", alignItems: "center" }}>
-            <i className="fa fa-check-circle fa-4x" style={{ color: "#59a559" }} />
-            <div style={{ marginLeft: 20, fontSize: 20, fontWeight: 500, color: "black" }}>
+            <i
+              className="fa fa-check-circle fa-4x"
+              style={{ color: "#59a559" }}
+            />
+            <div
+              style={{
+                marginLeft: 20,
+                fontSize: 20,
+                fontWeight: 500,
+                color: "black",
+              }}
+            >
               {t("order_on_the_way")}
             </div>
           </div>
@@ -108,7 +109,11 @@ function ConfirmationDetails({ orderId }: OrderDetailsProps) {
             <Col xs={8} className="font-weight-bold">
               {t("total_order")}
             </Col>
-            <Col xs={4} style={{ textAlign: "right" }} className="font-weight-bold">
+            <Col
+              xs={4}
+              style={{ textAlign: "right" }}
+              className="font-weight-bold"
+            >
               {order.totalPrice / 1000000} XUS
             </Col>
           </Row>
@@ -124,7 +129,9 @@ function ConfirmationDetails({ orderId }: OrderDetailsProps) {
         <div className="text-center">
           <div className="h2">{t("layout:name")}</div>
         </div>
-        <div className="d-flex flex-column justify-content-center m-3">{orderInfo}</div>
+        <div className="d-flex flex-column justify-content-center m-3">
+          {orderInfo}
+        </div>
       </Container>
     </>
   );

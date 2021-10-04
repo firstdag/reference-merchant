@@ -1,0 +1,34 @@
+version: '3.4'
+services:
+  merchant-gateway:
+    build:
+      context: ../gateway
+      dockerfile: Dockerfile
+      target: dynamic_conf
+    ports:
+      - ${GW_PORT:-8000}:8000
+    restart: always
+    volumes:
+      - ../gateway/nginx.store.conf:/etc/nginx/nginx.conf
+
+  merchant-backend:
+    build:
+      context: ../merchant/backend
+    environment:
+      - COMPOSE_ENV=development
+    env_file:
+      - ../merchant/backend/.env
+    volumes:
+      - ../merchant/backend/src:/merchant-backend/src
+    restart: always
+
+  merchant-frontend:
+    stdin_open: true
+    build:
+      context: ../merchant/frontend
+    environment:
+      - COMPOSE_ENV=development
+    restart: always
+    volumes:
+      - ../merchant/frontend:/app
+      - /app/node_modules/

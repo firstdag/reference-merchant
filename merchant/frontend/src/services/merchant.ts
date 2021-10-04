@@ -31,9 +31,21 @@ export interface PaymentDetailedStatus {
   blockchainTxs: BlockchainTx[];
 }
 
+
+export interface WalletLink {
+  walletName: string;
+  logo: {
+    image: string;
+    alt: string;
+  };
+  homepageUrl: string;
+  link: string;
+}
+
 export interface PaymentProcessingDetails {
-  paymentFormUrl: string;
-  vaspPaymentId: string;
+  deepLink: string;
+  qr: string;
+  walletLinks: WalletLink[];
   orderId: string;
 }
 
@@ -79,8 +91,9 @@ export default class BackendClient {
     const response = await this.client.post("/payments", order);
     return {
       orderId: response.data.order_id,
-      vaspPaymentId: response.data.vasp_payment_id,
-      paymentFormUrl: `${response.data.payment_form_url}&orderId=${response.data.order_id}`,
+      qr: response.data.qr,
+      deepLink: response.data.deepLink,
+      walletLinks: response.data.walletLinks
     };
   }
 

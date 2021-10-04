@@ -77,10 +77,27 @@ class CheckoutRequest:
     items: List[CheckoutItem]
 
 
+@dataclass_json
+@dataclass
+class WalletLogo(Schema):
+    base64: fields.Str(required=True)
+    alt: str
+
+
+@dataclass_json
+@dataclass
+class WalletLink(Schema):
+    name: fields.Str(required=True)
+    logo: WalletLogo
+    homepageUrl: str
+    link: fields.Str(required=True)
+
+
 class CheckoutResponse(Schema):
-    order_id = fields.UUID(required=True)
-    vasp_payment_id = fields.UUID(required=True)
-    payment_form_url = fields.URL(require_tld=False, required=True)
+    order_id: fields.UUID(required=True)
+    qr: fields.Str(required=True)
+    deepLink: fields.Str(required=True)
+    walletLinks: List[WalletLink]
 
 
 @dataclass_json

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from dataclasses_json import dataclass_json
 from datetime import datetime
 from typing import List
 from uuid import UUID
@@ -17,6 +18,7 @@ class OrderItem:
         return OrderItem(gtin=item.product_gtin, quantity=item.product_quantity)
 
 
+@dataclass_json
 @dataclass
 class Order:
     order_id: UUID
