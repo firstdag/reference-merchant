@@ -1,4 +1,4 @@
-FROM nginx:1.17-alpine as dynamic_conf
+FROM nginx:1.20-alpine as dynamic_conf
 
 #-------------------------------------------------------------------
 FROM dynamic_conf as default_conf
